@@ -4,177 +4,165 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101828">
-  <title>JAWAGEGE - Google Drive Backup</title>  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      padding: 24px;
-      display: grid;
-      place-items: center;
-      font-family: Arial, sans-serif;
-      color: #f8fafc;
-      background: radial-gradient(circle at top, #243b68, #101828 60%);
-    }
-
-    .card {
-      width: 100%;
-      max-width: 460px;
-      padding: 28px;
-      border: 1px solid #334155;
-      border-radius: 22px;
-      background: rgba(15, 23, 42, .94);
-      box-shadow: 0 20px 60px #0005;
-    }
-
-    .logo {
-      width: 58px;
-      height: 58px;
-      display: grid;
-      place-items: center;
-      border-radius: 17px;
-      background: #2563eb;
-      font-size: 25px;
-      font-weight: bold;
-      letter-spacing: -2px;
-    }
-
-    h1 {
-      margin: 20px 0 8px;
-      font-size: 26px;
-    }
-
-    p {
-      color: #cbd5e1;
-      line-height: 1.6;
-    }
-
-    .status {
-      margin: 22px 0;
-      padding: 14px;
-      border-radius: 12px;
-      background: #1e293b;
-      font-size: 14px;
-      line-height: 1.6;
-      overflow-wrap: anywhere;
-    }
-
-    button {
-      width: 100%;
-      padding: 14px;
-      border: 0;
-      border-radius: 12px;
-      color: white;
-      background: #2563eb;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      opacity: .6;
-      cursor: wait;
-    }
-
-    .note {
-      margin-top: 18px;
-      font-size: 12px;
-      color: #94a3b8;
-    }
+  <title>JAWAGEGE - Google Drive Backup</title>
+  <style>
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;padding:24px;display:grid;place-items:center;font-family:Arial,sans-serif;color:#f8fafc;background:radial-gradient(circle at top,#243b68,#101828 60%)}
+    .card{width:100%;max-width:460px;padding:28px;border:1px solid #334155;border-radius:22px;background:rgba(15,23,42,.94);box-shadow:0 20px 60px #0005}
+    .logo{width:58px;height:58px;display:grid;place-items:center;border-radius:17px;background:#2563eb;font-size:25px;font-weight:bold;letter-spacing:-2px}
+    h1{margin:20px 0 8px;font-size:26px} p{color:#cbd5e1;line-height:1.6}.status{margin:22px 0;padding:14px;border-radius:12px;background:#1e293b;font-size:14px;line-height:1.6;overflow-wrap:anywhere}
+    button{width:100%;padding:14px;margin:0 0 10px;border:0;border-radius:12px;color:white;background:#2563eb;font-size:16px;font-weight:bold;cursor:pointer}button.secondary{background:#334155}button:disabled{opacity:.6;cursor:wait}.note{margin-top:18px;font-size:12px;color:#94a3b8}
   </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <main class="card">
-    <div class="logo">AW</div>
-<h1>JAWAGEGE Drive Backup</h1>
+<main class="card">
+  <div class="logo">AW</div>
+  <h1>JAWAGEGE Drive Backup</h1>
+  <p>Simpan dan pulihkan database pribadi JAWAGEGE melalui Google Drive milikmu sendiri.</p>
+  <div class="status" id="status" role="status" aria-live="polite">Status: halaman berhasil dibuka.<br>Hubungkan Google Drive untuk memulai.</div>
+  <button id="connect" type="button">Hubungkan Google Drive</button>
+  <button id="backup" type="button" hidden>Backup database sekarang</button>
+  <button id="restore" type="button" class="secondary" hidden>Pulihkan database</button>
+  <p class="note">Gunakan hanya akun Google milik sendiri. Pemulihan akan mengganti database pribadi lokal yang ada. Pastikan membuat backup terlebih dahulu jika data lokal penting. Fitur backup otomatis belum diaktifkan.</p>
+</main>
+<script>
+(() => {
+  'use strict';
+  const CLIENT_ID = '393044750144-ic4q3ng6in0ttic03nvcmpf684dffcc8.apps.googleusercontent.com';
+  const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+  const BACKUP_NAME = 'JAWAGEGE-personal-backup.json';
+  const statusEl = document.getElementById('status');
+  const connectBtn = document.getElementById('connect');
+  const backupBtn = document.getElementById('backup');
+  const restoreBtn = document.getElementById('restore');
+  let tokenClient = null;
+  let accessToken = null;
+  let tokenExpiry = 0;
 
-<p>
-  Simpan dan pulihkan database pribadi JAWAGEGE
-  melalui Google Drive milikmu sendiri.
-</p>
-
-<div class="status" id="status" role="status" aria-live="polite">
-  Status: halaman berhasil dibuka.<br>
-  Koneksi Google Drive belum diaktifkan.
-</div>
-
-<button id="connect" type="button">
-  Hubungkan Google Drive
-</button>
-
-<p class="note">
-  Halaman ini belum mengunggah database. Setelah login,
-  fitur backup dan restore perlu dihubungkan ke ekstensi JAWAGEGE.
-</p>
- </main>
-  <script>
-    (() => {
-      const button = document.getElementById("connect");
-      const status = document.getElementById("status");
-
-      const CLIENT_ID =
-        "393044750144-ic4q3ng6in0ttic03nvcmpf684dffcc8.apps.googleusercontent.com";
-
-      const DRIVE_SCOPE =
-        "https://www.googleapis.com/auth/drive.file";
-
-      let tokenClient = null;
-      let accessToken = null;
-
-      function showStatus(message) {
-        status.textContent = message;
+  function status(message) { statusEl.textContent = message; }
+  function setConnected(connected) {
+    backupBtn.hidden = !connected;
+    restoreBtn.hidden = !connected;
+    connectBtn.textContent = connected ? 'Hubungkan ulang Google Drive' : 'Hubungkan Google Drive';
+  }
+  function requireToken() {
+    if (!accessToken || Date.now() >= tokenExpiry - 30000) {
+      accessToken = null;
+      setConnected(false);
+      throw new Error('Sesi Google Drive kedaluwarsa. Tekan Hubungkan Google Drive lagi.');
+    }
+    return accessToken;
+  }
+  async function driveFetch(url, options = {}) {
+    const token = requireToken();
+    const headers = new Headers(options.headers || {});
+    headers.set('Authorization', 'Bearer ' + token);
+    const response = await fetch(url, { ...options, headers });
+    if (response.status === 401) {
+      accessToken = null; setConnected(false);
+      throw new Error('Sesi Google Drive kedaluwarsa. Hubungkan ulang akun Google.');
+    }
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error('Google Drive menolak permintaan (HTTP ' + response.status + '): ' + text.slice(0, 240));
+    }
+    return response;
+  }
+  function extensionRequest(type, extra = {}) {
+    return new Promise((resolve, reject) => {
+      const requestId = 'jawagege-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+      const timer = setTimeout(() => { cleanup(); reject(new Error('Ekstensi tidak merespons. Pastikan JAWAGEGE sudah terpasang dan muat ulang halaman.')); }, 15000);
+      function onMessage(event) {
+        if (event.source !== window || event.origin !== location.origin) return;
+        const data = event.data;
+        if (!data || data.source !== 'JAWAGEGE_EXTENSION' || data.requestId !== requestId) return;
+        cleanup();
+        if (!data.ok) reject(new Error(data.error || 'Permintaan ke ekstensi gagal.'));
+        else resolve(data);
       }
-
-      button.addEventListener("click", () => {
-        if (!window.google || !google.accounts ||
-            !google.accounts.oauth2) {
-          showStatus(
-            "Komponen Google belum siap. Periksa koneksi internet, " +
-            "muat ulang halaman, lalu coba lagi."
-          );
-          return;
-        }
-
-        if (!tokenClient) {
-          tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: DRIVE_SCOPE,
-
-            callback: (response) => {
-              if (response.error) {
-                accessToken = null;
-                showStatus("Login gagal: " + response.error);
-                return;
-              }
-
-              accessToken = response.access_token;
-
-              showStatus(
-                "Google Drive berhasil dihubungkan! " +
-                "Izin akses diberikan. Database belum dicadangkan."
-              );
-
-              button.textContent = "Google Drive Terhubung";
-            },
-
-            error_callback: (error) => {
-              showStatus(
-                "Login Google tidak dapat dilanjutkan: " +
-                (error.message || error.type ||
-                 "kesalahan tidak diketahui")
-              );
-            }
-          });
-        }
-
-        showStatus("Menghubungkan ke Google Drive...");
-        tokenClient.requestAccessToken();
+      function cleanup() { clearTimeout(timer); window.removeEventListener('message', onMessage); }
+      window.addEventListener('message', onMessage);
+      window.postMessage({ source: 'JAWAGEGE_DRIVE_PAGE', type, requestId, ...extra }, location.origin);
+    });
+  }
+  async function findBackup() {
+    const q = "name='" + BACKUP_NAME + "' and trashed=false";
+    const url = 'https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) +
+      '&pageSize=20&orderBy=modifiedTime%20desc&fields=files(id,name,modifiedTime,size,mimeType)';
+    const response = await driveFetch(url);
+    const data = await response.json();
+    return Array.isArray(data.files) ? data.files : [];
+  }
+  async function uploadBackup(backup) {
+    const files = await findBackup();
+    const metadata = { name: BACKUP_NAME, mimeType: 'application/json', appProperties: { app: 'jawagege', backupType: 'personal-database' } };
+    const boundary = 'jawagege_boundary_' + Math.random().toString(16).slice(2);
+    const body = '--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata) +
+      '\r\n--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(backup) +
+      '\r\n--' + boundary + '--';
+    const existing = files[0];
+    const endpoint = existing
+      ? 'https://www.googleapis.com/upload/drive/v3/files/' + encodeURIComponent(existing.id) + '?uploadType=multipart&fields=id,name,modifiedTime,size'
+      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime,size';
+    const response = await driveFetch(endpoint, {
+      method: existing ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': 'multipart/related; boundary=' + boundary },
+      body
+    });
+    return response.json();
+  }
+  async function downloadBackup() {
+    const files = await findBackup();
+    if (!files.length) throw new Error('Belum ada file cadangan di Google Drive untuk aplikasi ini. Buat backup terlebih dahulu.');
+    const response = await driveFetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(files[0].id) + '?alt=media');
+    const backup = await response.json();
+    if (!backup || backup.format !== 'JAWAGEGE-DRIVE-BACKUP-1' || !backup.storage || !Array.isArray(backup.storage.awAnswerToolsPersonalDatabaseV1)) {
+      throw new Error('Format file cadangan tidak valid. Database lokal tidak diubah.');
+    }
+    return { backup, file: files[0] };
+  }
+  connectBtn.addEventListener('click', () => {
+    if (!window.google?.accounts?.oauth2) { status('Komponen login Google belum siap. Periksa internet lalu muat ulang halaman.'); return; }
+    if (!tokenClient) {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID, scope: DRIVE_SCOPE,
+        callback: (response) => {
+          if (response.error) { accessToken = null; setConnected(false); status('Login gagal: ' + response.error); return; }
+          accessToken = response.access_token;
+          tokenExpiry = Date.now() + (Number(response.expires_in || 3600) * 1000);
+          setConnected(true);
+          status('Google Drive terhubung. Pilih Backup database sekarang atau Pulihkan database.');
+        },
+        error_callback: (error) => status('Login Google tidak dapat dilanjutkan: ' + (error.message || error.type || 'kesalahan tidak diketahui'))
       });
-    })();
-  </script>
+    }
+    status('Menghubungkan ke Google Drive...');
+    tokenClient.requestAccessToken();
+  });
+  backupBtn.addEventListener('click', async () => {
+    backupBtn.disabled = true;
+    try {
+      status('Membaca database dari ekstensi JAWAGEGE...');
+      const result = await extensionRequest('GET_BACKUP_DATA');
+      if (!result.data) throw new Error('Ekstensi tidak mengirimkan data cadangan. Pastikan versi JAWAGEGE yang mendukung Drive Backup sudah dipasang dan halaman dimuat ulang.');
+      const file = await uploadBackup(result.data);
+      status('Backup berhasil disimpan di Google Drive. Terakhir diperbarui: ' + (file.modifiedTime || 'sekarang') + '. Jumlah pola soal: ' + result.data.storage.awAnswerToolsPersonalDatabaseV1.length.toLocaleString('id-ID') + '.');
+    } catch (error) { status(error.message || 'Backup gagal.'); }
+    finally { backupBtn.disabled = false; }
+  });
+  restoreBtn.addEventListener('click', async () => {
+    if (!confirm('Pemulihan akan mengganti database pribadi lokal JAWAGEGE pada perangkat ini. Lanjutkan?')) return;
+    restoreBtn.disabled = true;
+    try {
+      status('Mencari cadangan di Google Drive...');
+      const { backup, file } = await downloadBackup();
+      if (!confirm('Cadangan ditemukan, diperbarui ' + (file.modifiedTime || 'tanpa tanggal') + ', berisi ' + backup.storage.awAnswerToolsPersonalDatabaseV1.length.toLocaleString('id-ID') + ' pola soal. Ganti database lokal dengan cadangan ini?')) return;
+      const result = await extensionRequest('RESTORE_DATA', { backup });
+      status('Pemulihan berhasil. ' + Number(result.restoredCount || 0).toLocaleString('id-ID') + ' pola soal dipulihkan. Muat ulang halaman Alfa Learning agar perubahan terlihat.');
+    } catch (error) { status(error.message || 'Pemulihan gagal.'); }
+    finally { restoreBtn.disabled = false; }
+  });
+})();
+</script>
 </body>
 </html>
