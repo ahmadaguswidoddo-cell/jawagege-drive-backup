@@ -4,9 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101828">
-  <title>JAWAGEGE — Google Drive Backup</title>
-  <style>
-    * { box-sizing: border-box; }
+  <title>JAWAGEGE - Google Drive Backup</title>  <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -17,6 +19,7 @@
       color: #f8fafc;
       background: radial-gradient(circle at top, #243b68, #101828 60%);
     }
+
     .card {
       width: 100%;
       max-width: 460px;
@@ -26,6 +29,7 @@
       background: rgba(15, 23, 42, .94);
       box-shadow: 0 20px 60px #0005;
     }
+
     .logo {
       width: 58px;
       height: 58px;
@@ -37,8 +41,17 @@
       font-weight: bold;
       letter-spacing: -2px;
     }
-    h1 { margin: 20px 0 8px; font-size: 26px; }
-    p { color: #cbd5e1; line-height: 1.6; }
+
+    h1 {
+      margin: 20px 0 8px;
+      font-size: 26px;
+    }
+
+    p {
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+
     .status {
       margin: 22px 0;
       padding: 14px;
@@ -46,7 +59,9 @@
       background: #1e293b;
       font-size: 14px;
       line-height: 1.6;
+      overflow-wrap: anywhere;
     }
+
     button {
       width: 100%;
       padding: 14px;
@@ -58,34 +73,108 @@
       font-weight: bold;
       cursor: pointer;
     }
-    button:disabled { opacity: .6; cursor: wait; }
-    .note { margin-top: 18px; font-size: 12px; color: #94a3b8; }
+
+    button:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+
+    .note {
+      margin-top: 18px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
   </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <main class="card">
     <div class="logo">AW</div>
-    <h1>JAWAGEGE Drive Backup</h1>
-    <p>Simpan dan pulihkan database pribadi JAWAGEGE melalui Google Drive milikmu sendiri.</p>
+<h1>JAWAGEGE Drive Backup</h1>
 
-    <div class="status" id="status">
-      Status: halaman berhasil dibuka.<br>
-      Koneksi Google Drive belum diaktifkan.
-    </div>
+<p>
+  Simpan dan pulihkan database pribadi JAWAGEGE
+  melalui Google Drive milikmu sendiri.
+</p>
 
-    <button id="connect" type="button">Hubungkan Google Drive</button>
+<div class="status" id="status" role="status" aria-live="polite">
+  Status: halaman berhasil dibuka.<br>
+  Koneksi Google Drive belum diaktifkan.
+</div>
 
-    <p class="note">
-      Halaman ini belum meminta akses Google Drive dan belum mengunggah data apa pun.
-      Fitur backup akan diaktifkan setelah autentikasi selesai dikonfigurasi.
-    </p>
-  </main>
+<button id="connect" type="button">
+  Hubungkan Google Drive
+</button>
 
+<p class="note">
+  Halaman ini belum mengunggah database. Setelah login,
+  fitur backup dan restore perlu dihubungkan ke ekstensi JAWAGEGE.
+</p>
+ </main>
   <script>
-    document.getElementById("connect").addEventListener("click", function () {
-      document.getElementById("status").textContent =
-        "Koneksi Google belum dikonfigurasi. Database belum diunggah. Silakan lanjutkan konfigurasi OAuth.";
-    });
+    (() => {
+      const button = document.getElementById("connect");
+      const status = document.getElementById("status");
+
+      const CLIENT_ID =
+        "393044750144-ic4q3ng6in0ttic03nvcmpf684dffcc8.apps.googleusercontent.com";
+
+      const DRIVE_SCOPE =
+        "https://www.googleapis.com/auth/drive.file";
+
+      let tokenClient = null;
+      let accessToken = null;
+
+      function showStatus(message) {
+        status.textContent = message;
+      }
+
+      button.addEventListener("click", () => {
+        if (!window.google || !google.accounts ||
+            !google.accounts.oauth2) {
+          showStatus(
+            "Komponen Google belum siap. Periksa koneksi internet, " +
+            "muat ulang halaman, lalu coba lagi."
+          );
+          return;
+        }
+
+        if (!tokenClient) {
+          tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: DRIVE_SCOPE,
+
+            callback: (response) => {
+              if (response.error) {
+                accessToken = null;
+                showStatus("Login gagal: " + response.error);
+                return;
+              }
+
+              accessToken = response.access_token;
+
+              showStatus(
+                "Google Drive berhasil dihubungkan! " +
+                "Izin akses diberikan. Database belum dicadangkan."
+              );
+
+              button.textContent = "Google Drive Terhubung";
+            },
+
+            error_callback: (error) => {
+              showStatus(
+                "Login Google tidak dapat dilanjutkan: " +
+                (error.message || error.type ||
+                 "kesalahan tidak diketahui")
+              );
+            }
+          });
+        }
+
+        showStatus("Menghubungkan ke Google Drive...");
+        tokenClient.requestAccessToken();
+      });
+    })();
   </script>
 </body>
-  </html>
+</html>
