@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101828">
+  <title>JAWAGEGE — Google Drive Backup</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px;
+      display: grid;
+      place-items: center;
+      font-family: Arial, sans-serif;
+      color: #f8fafc;
+      background: radial-gradient(circle at top, #243b68, #101828 60%);
+    }
+    .card {
+      width: 100%;
+      max-width: 460px;
+      padding: 28px;
+      border: 1px solid #334155;
+      border-radius: 22px;
+      background: rgba(15, 23, 42, .94);
+      box-shadow: 0 20px 60px #0005;
+    }
+    .logo {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border-radius: 17px;
+      background: #2563eb;
+      font-size: 25px;
+      font-weight: bold;
+      letter-spacing: -2px;
+    }
+    h1 { margin: 20px 0 8px; font-size: 26px; }
+    p { color: #cbd5e1; line-height: 1.6; }
+    .status {
+      margin: 22px 0;
+      padding: 14px;
+      border-radius: 12px;
+      background: #1e293b;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      border: 0;
+      border-radius: 12px;
+      color: white;
+      background: #2563eb;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .6; cursor: wait; }
+    .note { margin-top: 18px; font-size: 12px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="logo">AW</div>
+    <h1>JAWAGEGE Drive Backup</h1>
+    <p>Simpan dan pulihkan database pribadi JAWAGEGE melalui Google Drive milikmu sendiri.</p>
+
+    <div class="status" id="status">
+      Status: halaman berhasil dibuka.<br>
+      Koneksi Google Drive belum diaktifkan.
+    </div>
+
+    <button id="connect" type="button">Hubungkan Google Drive</button>
+
+    <p class="note">
+      Halaman ini belum meminta akses Google Drive dan belum mengunggah data apa pun.
+      Fitur backup akan diaktifkan setelah autentikasi selesai dikonfigurasi.
+    </p>
+  </main>
+
+  <script>
+    document.getElementById("connect").addEventListener("click", function () {
+      document.getElementById("status").textContent =
+        "Koneksi Google belum dikonfigurasi. Database belum diunggah. Silakan lanjutkan konfigurasi OAuth.";
+    });
+  </script>
+</body>
+  </html>
